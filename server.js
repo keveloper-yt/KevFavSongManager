@@ -184,6 +184,12 @@ app.get("/logout", (req, res) => {
     req.session.destroy(() => res.redirect("/login"));
 });
 
+// About
+app.get('/about', (req, res) => {
+    if (!req.user) return res.redirect('/');
+    res.render('about', { displayName: req.user.display_name });
+});
+
 // Serve static files
 app.use(express.static("public"));
 

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Music Dashboard</title>
+    <title>Keveloper Jukebox</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"/>
 
     <style>
@@ -110,7 +110,7 @@
         }
 
         .play-btn:hover {
-            color: #1DB954;
+            color: #178394;
         }
 
         .favorite-btn i {
@@ -118,7 +118,7 @@
         }
 
         .favorite-btn .fa-solid {
-            color: #1DB954;
+            color: #178394;
         }
 
         /* Pagination */
@@ -146,8 +146,8 @@
     <div class="sidebar">
         <h2>🎵 Music</h2>
         <a href="#">Library</a>
-        <a href="#">Favorites</a>
-        <a href="/logout">Logout</a>
+        <a href="/about">About</a>
+        <a href="/logout">Log Out</a>
     </div>
 
     <div class="main">
@@ -157,7 +157,7 @@
         </div>
 
         <div class="song-table">
-            <div class="song-header">
+            <div class="song-header" id="song-list-header">
                 <div></div>
                 <div data-sort="favorite">❤</div>
                 <div data-sort="name">Title</div>
@@ -254,56 +254,70 @@
         });
 
         function renderSongs(songs){
-            const container=document.getElementById("song-list");
-            container.innerHTML="";
-            songs.forEach(s=>{
-                const row=document.createElement("div");
-                row.style.display="flex";
-                row.style.alignItems="center";
-                row.style.padding="10px 0";
-                row.style.borderBottom="1px solid #ccc";
+			const container=document.getElementById("song-list");
+			container.innerHTML="";
 
-                row.innerHTML=`
-                    <div style="flex:0 0 40px; margin-right:20px;">
-                        <button class="play-btn" data-url="${s.url}" style="padding:5px 10px;">
-                            <i class="fa fa-play"></i>
-                        </button>
-                    </div>
-                    <div style="flex:0 0 40px; margin-right:20px;">
-                        <button class="favorite-btn" data-id="${s.id}" style="padding:5px 10px;">
-                            <i class="fa-${s.isFavorite?"solid fa-heart":"regular fa-heart"}"></i>
-                        </button>
-                    </div>
-                    <div style="flex:2; font-weight:bold;">${s.name}</div>
-                    <div style="flex:1;">${s.artist}</div>
-                    <div style="flex:1;">${s.genre}</div>
-                    <div style="flex:2;">${s.vocal}</div>
-                `;
-                container.appendChild(row);
-            });
+			songs.forEach(s=>{
+				const row=document.createElement("div");
+				row.className="song-row";
 
-            // Play buttons open URL
-            document.querySelectorAll(".play-btn").forEach(btn=>{
-                btn.onclick=()=>{ const url=btn.dataset.url; if(url) window.open(url,"_blank"); };
-            });
+				row.innerHTML=`
+					<div>
+						<button class="play-btn" data-url="${s.url}">
+							<i class="fa fa-play"></i>
+						</button>
+					</div>
 
-            // Favorite buttons
-            document.querySelectorAll(".favorite-btn").forEach(btn=>{
-                btn.onclick=async ()=>{
-                    const songId=btn.dataset.id;
-                    const icon=btn.querySelector("i");
-                    const favorite=!icon.classList.contains("fa-solid");
-                    const resp=await fetch("/favorite",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({songId,favorite})});
-                    const result=await resp.json();
-                    if(result.success){
-                        icon.classList.toggle("fa-solid",favorite);
-                        icon.classList.toggle("fa-regular",!favorite);
-                        const song=allSongsFull.find(s=>s.id===songId);
-                        if(song) song.isFavorite=favorite;
-                    } else alert("Error: "+result.error);
-                };
-            });
-        }
+					<div>
+						<button class="favorite-btn" data-id="${s.id}">
+							<i class="fa-${s.isFavorite?"solid fa-heart":"regular fa-heart"}"></i>
+						</button>
+					</div>
+
+					<div style="font-weight:bold;">${s.name}</div>
+					<div>${s.artist}</div>
+					<div>${s.genre}</div>
+					<div>${s.vocal}</div>
+				`;
+
+				container.appendChild(row);
+			});
+
+			// Play
+			document.querySelectorAll(".play-btn").forEach(btn=>{
+				btn.onclick=()=>{ 
+					const url=btn.dataset.url; 
+					if(url) window.open(url,"_blank"); 
+				};
+			});
+
+			// Favorite
+			document.querySelectorAll(".favorite-btn").forEach(btn=>{
+				btn.onclick=async ()=>{
+					const songId=btn.dataset.id;
+					const icon=btn.querySelector("i");
+					const favorite=!icon.classList.contains("fa-solid");
+
+					const resp=await fetch("/favorite",{
+						method:"POST",
+						headers:{"Content-Type":"application/json"},
+						credentials:"same-origin",
+						body:JSON.stringify({songId,favorite})
+					});
+
+					const result=await resp.json();
+
+					if(result.success){
+						icon.classList.toggle("fa-solid",favorite);
+						icon.classList.toggle("fa-regular",!favorite);
+
+						const song=allSongsFull.find(s=>s.id===songId);
+						if(song) song.isFavorite=favorite;
+					} 
+					else alert("Error: "+result.error);
+				};
+			});
+		}
 
         // Pagination
         document.getElementById("prev-page").onclick=()=>{ currentPage--; applyFilterAndRender(); };
