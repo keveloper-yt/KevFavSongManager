@@ -16,7 +16,7 @@ app.set('views', path.join(__dirname, 'views'));
 // ===============================
 const CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
-const REDIRECT_URI = "http://localhost:3000/auth/twitch/callback";
+const REDIRECT_URI = "https://kevfavsongmanager.onrender.com/auth/twitch/callback";
 
 // ===============================
 // Database
