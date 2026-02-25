@@ -107,6 +107,16 @@ app.get("/auth/twitch", (req, res) => {
     res.redirect(authUrl);
 });
 
+// Logout
+app.get("/logout", (req, res) => {
+    req.session.destroy(() => res.redirect("/login"));
+});
+
+// About
+app.get("/about", requireAuth, (req, res) => {
+    res.render("about", { displayName: req.session.user.display_name });
+});
+
 app.get("/auth/twitch/callback", async (req, res) => {
     const code = req.query.code;
     if (!code) return res.redirect("/login");
@@ -177,17 +187,6 @@ app.post("/favorite", requireAuth, async (req, res) => {
         console.error("Favorite DB error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
-});
-
-// Logout
-app.get("/logout", (req, res) => {
-    req.session.destroy(() => res.redirect("/login"));
-});
-
-// About
-app.get('/about', (req, res) => {
-    if (!req.user) return res.redirect('/');
-    res.render('about', { displayName: req.user.display_name });
 });
 
 // Serve static files
