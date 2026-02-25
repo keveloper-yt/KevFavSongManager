@@ -177,9 +177,143 @@
     </div>
 </div>
 
-<script>
-/* KEEP YOUR EXISTING JS EXACTLY AS IS */
-</script>
 
+
+    <script>
+        let allSongsFull = [];
+        let filteredSongs = [];
+        let currentPage = 1;
+        const pageSize = 20;
+        let currentSort = { column: null, ascending: true };
+
+        async function loadSongs() {
+            const res = await fetch('/songs', { credentials: 'same-origin' });
+            const data = await res.json();
+            allSongsFull = data.songs;
+            applyFilterAndRender();
+        }
+
+        function applyFilterAndRender() {
+            const term = document.getElementById("search").value.toLowerCase();
+
+            // Filter
+            filteredSongs = allSongsFull.filter(s =>
+                s.name.toLowerCase().includes(term) ||
+                s.artist.toLowerCase().includes(term) ||
+                s.genre.toLowerCase().includes(term) ||
+                s.vocal.toLowerCase().includes(term)
+            );
+
+            // Sort
+            if (currentSort.column) {
+                filteredSongs.sort((a,b) => {
+                    let valA, valB;
+                    switch(currentSort.column){
+                        case "favorite": valA = a.isFavorite?1:0; valB=b.isFavorite?1:0; break;
+                        case "name": valA=a.name.toLowerCase(); valB=b.name.toLowerCase(); break;
+                        case "artist": valA=a.artist.toLowerCase(); valB=b.artist.toLowerCase(); break;
+                        case "genre": valA=a.genre.toLowerCase(); valB=b.genre.toLowerCase(); break;
+                        case "vocal": valA=a.vocal.toLowerCase(); valB=b.vocal.toLowerCase(); break;
+                    }
+                    if(valA<valB) return currentSort.ascending?-1:1;
+                    if(valA>valB) return currentSort.ascending?1:-1;
+                    return 0;
+                });
+            }
+
+            // Pagination
+            const totalPages = Math.ceil(filteredSongs.length/pageSize);
+            if(currentPage>totalPages) currentPage=totalPages||1;
+            const start=(currentPage-1)*pageSize;
+            const pageSongs = filteredSongs.slice(start,start+pageSize);
+
+            renderSongs(pageSongs);
+
+            // Page controls
+            document.getElementById("prev-page").style.display = currentPage>1?"inline-block":"none";
+            document.getElementById("next-page").style.display = currentPage<totalPages?"inline-block":"none";
+            document.getElementById("current-page").textContent = currentPage;
+
+            // Update sort indicators
+            document.querySelectorAll("#song-list-header [data-sort]").forEach(h=>{
+                h.textContent = h.dataset.sort==="favorite"?"Fav":h.dataset.sort.charAt(0).toUpperCase()+h.dataset.sort.slice(1);
+                if(h.dataset.sort===currentSort.column){
+                    h.textContent += currentSort.ascending?" ▼":" ▲";
+                }
+            });
+        }
+
+        // Sorting
+        document.querySelectorAll("#song-list-header [data-sort]").forEach(h=>{
+            h.onclick=()=>{
+                const col=h.dataset.sort;
+                if(currentSort.column===col) currentSort.ascending=!currentSort.ascending;
+                else { currentSort.column=col; currentSort.ascending=true; }
+                applyFilterAndRender();
+            };
+        });
+
+        function renderSongs(songs){
+            const container=document.getElementById("song-list");
+            container.innerHTML="";
+            songs.forEach(s=>{
+                const row=document.createElement("div");
+                row.style.display="flex";
+                row.style.alignItems="center";
+                row.style.padding="10px 0";
+                row.style.borderBottom="1px solid #ccc";
+
+                row.innerHTML=`
+                    <div style="flex:0 0 40px; margin-right:20px;">
+                        <button class="play-btn" data-url="${s.url}" style="padding:5px 10px;">
+                            <i class="fa fa-play"></i>
+                        </button>
+                    </div>
+                    <div style="flex:0 0 40px; margin-right:20px;">
+                        <button class="favorite-btn" data-id="${s.id}" style="padding:5px 10px;">
+                            <i class="fa-${s.isFavorite?"solid fa-heart":"regular fa-heart"}"></i>
+                        </button>
+                    </div>
+                    <div style="flex:2; font-weight:bold;">${s.name}</div>
+                    <div style="flex:1;">${s.artist}</div>
+                    <div style="flex:1;">${s.genre}</div>
+                    <div style="flex:2;">${s.vocal}</div>
+                `;
+                container.appendChild(row);
+            });
+
+            // Play buttons open URL
+            document.querySelectorAll(".play-btn").forEach(btn=>{
+                btn.onclick=()=>{ const url=btn.dataset.url; if(url) window.open(url,"_blank"); };
+            });
+
+            // Favorite buttons
+            document.querySelectorAll(".favorite-btn").forEach(btn=>{
+                btn.onclick=async ()=>{
+                    const songId=btn.dataset.id;
+                    const icon=btn.querySelector("i");
+                    const favorite=!icon.classList.contains("fa-solid");
+                    const resp=await fetch("/favorite",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({songId,favorite})});
+                    const result=await resp.json();
+                    if(result.success){
+                        icon.classList.toggle("fa-solid",favorite);
+                        icon.classList.toggle("fa-regular",!favorite);
+                        const song=allSongsFull.find(s=>s.id===songId);
+                        if(song) song.isFavorite=favorite;
+                    } else alert("Error: "+result.error);
+                };
+            });
+        }
+
+        // Pagination
+        document.getElementById("prev-page").onclick=()=>{ currentPage--; applyFilterAndRender(); };
+        document.getElementById("next-page").onclick=()=>{ currentPage++; applyFilterAndRender(); };
+
+        // Search input
+        document.getElementById("search").addEventListener("input",()=>{ currentPage=1; applyFilterAndRender(); });
+
+        // Initial load
+        loadSongs();
+    </script>
 </body>
 </html>
