@@ -5,7 +5,6 @@ const axios = require("axios");
 const session = require("express-session");
 const path = require("path");
 const fs = require("fs");
-const Database = require("better-sqlite3");
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -18,30 +17,14 @@ const CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const REDIRECT_URI = "https://kevfavsongmanager.onrender.com/auth/twitch/callback";
 
-// ===============================
-// Database
-// ===============================
-const db = new Database("user_data.db");
+const { Pool } = require("pg");
 
-// Users table
-db.prepare(`
-    CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        login TEXT NOT NULL,
-        display_name TEXT NOT NULL,
-        color_choice TEXT
-    )
-`).run();
-
-// Favorites table
-db.prepare(`
-    CREATE TABLE IF NOT EXISTS favorites (
-        user_id TEXT NOT NULL,
-        song_id TEXT NOT NULL,
-        PRIMARY KEY(user_id, song_id),
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    )
-`).run();
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
 
 // ===============================
 // Middleware
@@ -147,11 +130,6 @@ app.get("/auth/twitch/callback", async (req, res) => {
         const user = userResponse.data.data[0];
         req.session.user = user;
 
-        db.prepare(`
-            INSERT OR IGNORE INTO users (id, login, display_name)
-            VALUES (?, ?, ?)
-        `).run(user.id, user.login, user.display_name);
-
         req.session.save(() => res.redirect("/"));
     } catch (err) {
         console.error("OAuth error:", err.response?.data || err);
@@ -160,30 +138,39 @@ app.get("/auth/twitch/callback", async (req, res) => {
 });
 
 // Get songs with favorites
-app.get("/songs", requireAuth, (req, res) => {
-    const favoriteRows = db.prepare("SELECT song_id FROM favorites WHERE user_id = ?")
-        .all(req.session.user.id);
-    const favoriteIds = new Set(favoriteRows.map(r => r.song_id));
+app.get("/songs", requireAuth, async (req, res) => {
+    const { rows } = await pool.query(
+		"SELECT song_id FROM favorites WHERE user_id = $1",
+		[req.session.user.id]
+	);
+
+	const favoriteIds = new Set(rows.map(r => r.song_id));
 
     const result = songs.map(s => ({ ...s, isFavorite: favoriteIds.has(s.id) }));
     res.json({ songs: result });
 });
 
 // Toggle favorite
-app.post("/favorite", requireAuth, (req, res) => {
+app.post("/favorite", requireAuth, async (req, res) => {
     const { songId, favorite } = req.body;
     const songExists = songs.find(s => s.id === songId);
     if (!songExists) return res.status(400).json({ error: "Invalid song ID" });
 
     try {
         if (favorite) {
-            db.prepare(`INSERT OR IGNORE INTO favorites (user_id, song_id) VALUES (?, ?)`)
-                .run(req.session.user.id, songId);
+			await pool.query(
+				`INSERT INTO favorites (user_id, song_id)
+				 VALUES ($1, $2)
+				 ON CONFLICT DO NOTHING`,
+				[req.session.user.id, songId]
+			);
             console.log(`User ${req.session.user.id} FAVORITED song ${songId}`);
         } else {
-            db.prepare(`DELETE FROM favorites WHERE user_id = ? AND song_id = ?`)
-                .run(req.session.user.id, songId);
-            console.log(`User ${req.session.user.id} UNFAVORITED song ${songId}`);
+            await pool.query(
+				"DELETE FROM favorites WHERE user_id = $1 AND song_id = $2",
+				[req.session.user.id, songId]
+			);
+			console.log(`User ${req.session.user.id} UNFAVORITED song ${songId}`);
         }
         res.json({ success: true, songId, favorite });
     } catch (err) {
