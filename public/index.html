@@ -1,29 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Twitch Login</title>
-	<link
-	  rel="stylesheet" 
-	  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" 
-	  integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" 
-	  crossorigin="anonymous" 
-	  referrerpolicy="no-referrer"
-	/>
+    <title>Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"/>
 
-	<style>
-		.play-btn:hover, .favorite-btn:hover {
-			background-color: #eee;
-			cursor: pointer;
-		}
-		.favorite-btn i {
-			color: red; /* heart color */
-		}
-	</style>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #121212;
+            font-family: Arial, Helvetica, sans-serif;
+            color: white;
+        }
+
+        .login-card {
+            background: #181818;
+            padding: 50px;
+            border-radius: 12px;
+            text-align: center;
+            width: 320px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+        }
+
+        .login-card h1 {
+            margin-bottom: 30px;
+        }
+
+        .twitch-btn {
+            background: #9146FF;
+            border: none;
+            padding: 14px 20px;
+            width: 100%;
+            color: white;
+            font-size: 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .twitch-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .twitch-btn i {
+            margin-right: 8px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Login</h1>
-    <a href="/auth/twitch">
-        <button>Login with Twitch</button>
-    </a>
+    <div class="login-card">
+        <h1>Music Dashboard</h1>
+        <a href="/auth/twitch">
+            <button class="twitch-btn">
+                <i class="fa-brands fa-twitch"></i>
+                Login with Twitch
+            </button>
+        </a>
+    </div>
 </body>
 </html>
