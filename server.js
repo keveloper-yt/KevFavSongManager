@@ -58,7 +58,16 @@ app.use(session({
 // Authentication helper
 // ===============================
 function requireAuth(req, res, next) {
-    if (!req.session.user) return res.status(401).json({ error: "Unauthorized" });
+    if (!req.session.user) {
+        // If it's a browser navigation request → redirect
+        if (req.headers.accept && req.headers.accept.includes("text/html")) {
+            return res.redirect("/login");
+        }
+
+        // Otherwise (API request) → return JSON
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
     next();
 }
 
