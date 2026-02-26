@@ -112,14 +112,30 @@
         .play-btn:hover {
             color: #178394;
         }
+		
+		.favorite-btn {
+			font-size: 16px;
+			transition: transform 0.15s ease;
+		}
 
         .favorite-btn i {
-            transition: 0.2s;
+			transition: transform 0.15s ease, color 0.15s ease;
         }
 
         .favorite-btn .fa-solid {
             color: #178394;
+			transform: scale(1.4);
         }
+		
+		.favorite-btn.pop i {
+			animation: heartPop 0.25s ease;
+		}
+		
+		@keyframes heartPop {
+			0%   { transform: scale(1); }
+			50%  { transform: scale(1.6); }
+			100% { transform: scale(1.4); }
+		}
 
         /* Pagination */
         .pagination {
@@ -144,7 +160,7 @@
 
 <div class="layout">
     <div class="sidebar">
-        <h2>🎵 Music</h2>
+        <h2>🎵 Jukev</h2>
         <a href="#">Library</a>
         <a href="/about">About</a>
         <a href="/logout">Log Out</a>
